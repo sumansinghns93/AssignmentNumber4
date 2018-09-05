@@ -1,0 +1,57 @@
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.Mapper.Context;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+
+import java.io.IOException;
+import java.util.logging.Logger;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.TextInputFormat;
+
+public class TvSales {
+
+    public static class TvSalesMapper extends Mapper<LongWritable, Text, LongWritable, Text>{
+		
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException{
+	
+	    if(recordIsInvalid(value)==false){
+	        Text record = new Text();
+		record = value;
+	        context.write(key,record);
+	    }			
+	}
+		
+	private boolean recordIsInvalid(Text record){
+			
+            String[] lineArray = record.toString().split("\\|");
+	    boolean isInvalid = false;
+	    for(int i=0;i<lineArray.length;i++){
+	        if(lineArray[i].equals("NA")){
+	            isInvalid = true;
+	        }
+	    }
+	    return isInvalid;
+     }
+
+	public static void main(String[] args) throws Exception{
+	    
+	    Configuration conf = new Configuration();	
+		
+	    Job job = Job.getInstance(conf, "Tv Sales Invalid REcords");
+	    job.setJarByClass(TvSales.class);
+	    
+	    job.setMapOutputKeyClass(LongWritable.class);
+	    job.setMapOutputValueClass(Text.class);
+	    	    
+	    job.setMapperClass(TvSalesMapper.class);
+	    
+	    FileInputFormat.addInputPath(job, new Path(args[0]));
+	    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+	    
+	    System.exit(job.waitForCompletion(true) ? 0 : 1);  	    	    	    
+	}
+}
